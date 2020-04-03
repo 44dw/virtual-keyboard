@@ -1,0 +1,35 @@
+.keyboard-container__key, .keyboard-container__row {
+  display: flex;
+  flex-direction: row;
+}
+
+.keyboard-container__row {
+  width: 700px;
+}
+
+.keyboard-container__key {
+  border: 1px solid black;
+  width: 40px;
+  height: 40px;
+  margin-right: 5px;
+  justify-content: center;
+  align-items: center;
+}
+.keyboard-container__key:last-child {
+  margin-right: 0;
+}
+
+.keyboard-container__row {
+  margin-bottom: 5px;
+}
+
+.key_functional {
+  padding: 0 10px;
+  flex-grow: 2;
+}
+
+.key-space {
+  width: 200px;
+}
+
+/*# sourceMappingURL=style.css.map */
