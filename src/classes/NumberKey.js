@@ -1,7 +1,8 @@
-import Key from "./Key.js";
+import Key from './Key.js';
+import Letters from './Letters.js'
 
 export default class NumberKey extends Key {
-    constructor(letter, engCapitalLetter, rusCapitalLetter) {
-        super(letter, letter, engCapitalLetter, rusCapitalLetter ? rusCapitalLetter : engCapitalLetter);
+    constructor(letter, engCapitalLetter, rusCapitalLetter, keyCode) {
+        super(new Letters(letter, letter, engCapitalLetter, rusCapitalLetter ? rusCapitalLetter : engCapitalLetter), keyCode);
     }
 }

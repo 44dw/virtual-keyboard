@@ -20,6 +20,10 @@
     &:last-child {
         margin-right: 0;
     }
+
+    &:hover {
+        cursor: pointer;
+    }
 }
 
 .keyboard-container__row {
@@ -31,6 +35,12 @@
     flex-grow: 2;
 }
 
-.key-space {
+.key_space {
     width: 200px;
+}
+
+.key_active {
+    background-color: #02bd0e;
+    border-color: #005205;
+    color: white;
 }

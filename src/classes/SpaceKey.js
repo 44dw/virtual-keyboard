@@ -1,7 +1,8 @@
-import Key from "./Key.js";
+import Key from './Key.js';
+import Letters from './Letters.js'
 
 export default class SpaceKey extends Key {
     constructor() {
-        super('', '', '', '');
+        super(new Letters('', '', '', ''), 'Space');
     }
 }
