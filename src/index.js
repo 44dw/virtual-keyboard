@@ -15,7 +15,7 @@ const LANGUAGE_KEY = 'language';
 const LANGUAGE_RUS = 'rus';
 const LANGUAGE_ENG = 'eng';
 
-let KEYBOARD_CONTAINER, KEYS;
+let KEYBOARD_CONTAINER, KEYS, TEXTAREA;
 
 window.onload = () => {
     loadPageContent();
@@ -26,6 +26,7 @@ window.onload = () => {
 const setConstants = () => {
     KEYBOARD_CONTAINER = document.querySelector('.keyboard-container');
     KEYS = document.querySelectorAll('.keyboard-container__key');
+    TEXTAREA = document.querySelector('.textarea');
 }
 
 const addElementListeners = () => {
@@ -39,9 +40,47 @@ const addKeyClickListener = () => {
     KEYBOARD_CONTAINER.addEventListener('mouseup', (e) => onKeyMouseup(e.target))
 }
 
+// here all keydown event will be handle (both mouse and keyboard)
 const addKeyPressListener = () => {
-    document.addEventListener('keydown', (e) => setActiveKeys(e.code))
+    document.addEventListener('keydown', (e) => {
+        console.log(e);
+        setActiveKeys(e.code);
+        const { key, code } = e;
+        if (key == 'Tab') {
+            setIdent(e);
+        }
+        // do nothing if event from keyboard and textarea is active
+        if (textareaIsActive(code)) {
+            return;
+        }
+        // all letters and numbers and line break
+        if ((key.length == 1 || key == 'Enter')) {
+            setTextToTextarea(key);
+        }
+
+        switch(key) {
+            case('Backspace'): {
+                delTextBeforeCursor();
+                break;
+            }
+            case('Delete'): {
+                delTextAfterCursor();
+                TEXTAREA.focus();
+                break;
+            }
+            case('ArrowRight'):
+            case('ArrowLeft'):
+            case('ArrowUp'):
+            case('ArrowDown'): {
+                TEXTAREA.focus();
+            }
+        }
+    })
     document.addEventListener('keyup', (e) => removeActiveKeys(e.code))
+}
+
+const textareaIsActive = (code) => {
+    return (code.length > 0 && document.activeElement === TEXTAREA);
 }
 
 const addLanguageChangeListener = () => {
@@ -54,12 +93,56 @@ const addLanguageChangeListener = () => {
     })
 }
 
+const setIdent = (e) => {
+    e.preventDefault();
+    const { selectionStart, value } = TEXTAREA;
+    // const prevStart = selectionStart;
+    const ident = '   ';
+    TEXTAREA.value = value.slice(0, selectionStart) + ident + value.slice(selectionStart, value.length);
+    TEXTAREA.focus();
+    TEXTAREA.selectionStart = TEXTAREA.selectionEnd = selectionStart + ident.length;
+}
+
+const delTextBeforeCursor = () => {
+    const { value } = TEXTAREA;
+    TEXTAREA.value = value.slice(0, value.length - 1);
+}
+
+const delTextAfterCursor = () => {
+    const { selectionStart, value } = TEXTAREA;
+    TEXTAREA.value = value.slice(0, selectionStart) + value.slice(selectionStart + 1, value.length);
+    TEXTAREA.selectionStart = TEXTAREA.selectionEnd = selectionStart - 1;
+}
+
+const setTextToTextarea = (key) => {
+    const { value } = TEXTAREA;
+    TEXTAREA.value = value + (key == 'Enter' ? '\n' : key);
+}
+
 const onKeyMousedown = (target) => {
     if (!target.classList.contains('keyboard-container__key')) {
         return;
     }
 
     target.classList.add('key_active');
+    dispatchKeyEvent(target.innerText, target.keyObject);
+}
+
+const dispatchKeyEvent = (text, keyObject) => {
+
+    if (keyObject instanceof FunctionalKey) {
+        dispatchEventForFunctionalKey(keyObject.keyCode);
+    } else {
+        // letter or custom key
+        document.dispatchEvent(new KeyboardEvent('keydown', {'key': text}))
+    }
+}
+
+const dispatchEventForFunctionalKey = (keyCode) => {
+    document.dispatchEvent(new KeyboardEvent('keydown', {'key': keyCode}))
+    // if (keyCode === 'Enter') {
+        
+    // }
 }
 
 const onKeyMouseup = (target) => {
@@ -102,6 +185,18 @@ const sendChangeLanguageEvent = () => {
 }
 
 const loadPageContent = () => {
+    renderTextarea();
+    renderKeyboard();
+}
+
+const renderTextarea = () => {
+    let textarea = document.createElement('textarea');
+    // textarea.setAttribute('readonly', 'readonly')
+    textarea.classList.add('textarea');
+    BODY.appendChild(textarea);
+}
+
+const renderKeyboard = () => {
     const keyboardArr = generateKeyboardArr();
     attachKeyboardToDom(keyboardArr);
 }
