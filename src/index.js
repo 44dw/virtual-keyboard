@@ -54,7 +54,7 @@ const addKeyPressListener = () => {
             return;
         }
         // all letters and numbers and line break
-        if ((key.length == 1 || key == 'Enter')) {
+        if ((key.length == 1 || key == 'Enter' || key == 'Space')) {
             setTextToTextarea(key);
         }
 
@@ -118,7 +118,15 @@ const delTextAfterCursor = () => {
 
 const setTextToTextarea = (key) => {
     const { value } = TEXTAREA;
-    TEXTAREA.value = value + (key == 'Enter' ? '\n' : key);
+    let symbol;
+    if (key == 'Enter') {
+        symbol = '\n';
+    } else if (key == 'Space') {
+        symbol = ' ';
+    } else {
+        symbol = key;
+    }
+    TEXTAREA.value = value + symbol;
 }
 
 const onKeyMousedown = (target) => {
@@ -132,7 +140,7 @@ const onKeyMousedown = (target) => {
 
 const dispatchKeydownEvent = (text, keyObject) => {
 
-    if (keyObject instanceof FunctionalKey) {
+    if (keyObject instanceof FunctionalKey || keyObject instanceof SpaceKey) {
         dispatchEventForFunctionalKey('keydown', keyObject.keyCode);
     } else {
         // letter or custom key
@@ -154,7 +162,7 @@ const onKeyMouseup = (target) => {
 }
 
 const dispatchKeyupEvent = (text, keyObject) => {
-    if (keyObject instanceof FunctionalKey) {
+    if (keyObject instanceof FunctionalKey || keyObject instanceof SpaceKey) {
         dispatchEventForFunctionalKey('keyup', keyObject.keyCode);
     } else {
         // letter or custom key
@@ -211,7 +219,6 @@ const loadPageContent = () => {
 
 const renderTextarea = () => {
     let textarea = document.createElement('textarea');
-    // textarea.setAttribute('readonly', 'readonly')
     textarea.classList.add('textarea');
     BODY.appendChild(textarea);
 }
