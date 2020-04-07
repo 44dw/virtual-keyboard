@@ -6,16 +6,12 @@ import SpaceKey from "./classes/SpaceKey.js";
 
 const BODY = document.querySelector('body');
 
-const NUMBER_KEY = 'NumberKey';
-const LETTER_KEY = 'LetterKey';
-const FUNCTIONAL_KEY = 'FunctionalKey';
-const CUSTOM_KEY = 'CustomKey';
-
 const LANGUAGE_KEY = 'language';
 const LANGUAGE_RUS = 'rus';
 const LANGUAGE_ENG = 'eng';
+const REGISTER_KEY = 'register';
 
-let KEYBOARD_CONTAINER, KEYS, TEXTAREA;
+let KEYBOARD_CONTAINER, KEYS, LETTER_KEYS, TEXTAREA;
 
 window.onload = () => {
     loadPageContent();
@@ -26,6 +22,7 @@ window.onload = () => {
 const setConstants = () => {
     KEYBOARD_CONTAINER = document.querySelector('.keyboard-container');
     KEYS = document.querySelectorAll('.keyboard-container__key');
+    LETTER_KEYS = document.querySelectorAll('.key_letter');
     TEXTAREA = document.querySelector('.textarea');
 }
 
@@ -43,11 +40,14 @@ const addKeyClickListener = () => {
 // here all keydown event will be handle (both mouse and keyboard)
 const addKeyPressListener = () => {
     document.addEventListener('keydown', (e) => {
-        console.log(e);
-        setActiveKeys(e.code);
         const { key, code } = e;
+        setActiveKeys(code);
         if (key == 'Tab') {
             setIdent(e);
+        } else if (key.includes('Shift')) {
+            toggleAllElementsRegister(true);
+        } else if (key.includes('CapsLock')) {
+            changeRegisterInSessionStorage();
         }
         // do nothing if event from keyboard and textarea is active
         if (textareaIsActive(code)) {
@@ -61,12 +61,9 @@ const addKeyPressListener = () => {
         switch(key) {
             case('Backspace'): {
                 delTextBeforeCursor();
-                break;
             }
             case('Delete'): {
                 delTextAfterCursor();
-                TEXTAREA.focus();
-                break;
             }
             case('ArrowRight'):
             case('ArrowLeft'):
@@ -76,7 +73,12 @@ const addKeyPressListener = () => {
             }
         }
     })
-    document.addEventListener('keyup', (e) => removeActiveKeys(e.code))
+    document.addEventListener('keyup', (e) => {
+        if (e.key.includes('Shift')) {
+            toggleAllElementsRegister(false)
+        }
+        removeActiveKeys(e.code)
+    })
 }
 
 const textareaIsActive = (code) => {
@@ -87,7 +89,7 @@ const addLanguageChangeListener = () => {
     // alt + shift has been pressed
     document.addEventListener('keydown', (e) => {
         if (e.altKey && e.shiftKey) {
-            changeLanguage();
+            changeLanguageInSessionStorage();
             sendChangeLanguageEvent();
         }
     })
@@ -125,24 +127,21 @@ const onKeyMousedown = (target) => {
     }
 
     target.classList.add('key_active');
-    dispatchKeyEvent(target.innerText, target.keyObject);
+    dispatchKeydownEvent(target.innerText, target.keyObject);
 }
 
-const dispatchKeyEvent = (text, keyObject) => {
+const dispatchKeydownEvent = (text, keyObject) => {
 
     if (keyObject instanceof FunctionalKey) {
-        dispatchEventForFunctionalKey(keyObject.keyCode);
+        dispatchEventForFunctionalKey('keydown', keyObject.keyCode);
     } else {
         // letter or custom key
-        document.dispatchEvent(new KeyboardEvent('keydown', {'key': text}))
+        document.dispatchEvent(new KeyboardEvent('keydown', {'key': text}));
     }
 }
 
-const dispatchEventForFunctionalKey = (keyCode) => {
-    document.dispatchEvent(new KeyboardEvent('keydown', {'key': keyCode}))
-    // if (keyCode === 'Enter') {
-        
-    // }
+const dispatchEventForFunctionalKey = (event, keyCode) => {
+    document.dispatchEvent(new KeyboardEvent(event, {'key': keyCode}));
 }
 
 const onKeyMouseup = (target) => {
@@ -151,6 +150,16 @@ const onKeyMouseup = (target) => {
     }
 
     target.classList.remove('key_active');
+    dispatchKeyupEvent(target.innerText, target.keyObject);
+}
+
+const dispatchKeyupEvent = (text, keyObject) => {
+    if (keyObject instanceof FunctionalKey) {
+        dispatchEventForFunctionalKey('keyup', keyObject.keyCode);
+    } else {
+        // letter or custom key
+        document.dispatchEvent(new KeyboardEvent('keyup', {'key': text}));
+    }
 }
 
 const setActiveKeys = (code) => {
@@ -171,10 +180,20 @@ const removeActiveKeys = (code) => {
     })
 }
 
-const changeLanguage = () => {
+const changeLanguageInSessionStorage = () => {
     sessionStorage.getItem(LANGUAGE_KEY) == LANGUAGE_ENG 
         ? sessionStorage.setItem(LANGUAGE_KEY, LANGUAGE_RUS) 
         : sessionStorage.setItem(LANGUAGE_KEY, LANGUAGE_ENG); 
+}
+
+const changeRegisterInSessionStorage = () => {
+    if (sessionStorage.getItem(REGISTER_KEY) === 'true') {
+        sessionStorage.setItem(REGISTER_KEY, 'false');
+        toggleAllElementsRegister(false);
+    } else {
+        sessionStorage.setItem(REGISTER_KEY, 'true');
+        toggleAllElementsRegister(true);
+    }
 }
 
 const sendChangeLanguageEvent = () => {
@@ -187,6 +206,7 @@ const sendChangeLanguageEvent = () => {
 const loadPageContent = () => {
     renderTextarea();
     renderKeyboard();
+    renderNote();
 }
 
 const renderTextarea = () => {
@@ -212,6 +232,13 @@ const attachKeyboardToDom = (keyboardArr) => {
             appendKeyToRow(rowContainer, keyObj);
         })
     })
+}
+
+const renderNote = () => {
+    const note = document.createElement('p');
+    note.textContent = 'переключение языков: Alt + Shift'
+    note.classList.add('note');
+    BODY.appendChild(note);
 }
 
 const setLanguageToSessionStorage = () => {
@@ -244,6 +271,9 @@ const appendKeyToRow = (rowContainer, keyObj) => {
     if (keyObj instanceof SpaceKey) {
         keyElement.classList.add('key_space');
     }
+    if (keyObj instanceof LetterKey || keyObj instanceof CustomKey) {
+        keyElement.classList.add('key_letter');
+    }
     const language = sessionStorage.getItem(LANGUAGE_KEY);
     keyElement.innerText = (language == LANGUAGE_ENG ? keyObj.engLetter : keyObj.rusLetter);
     rowContainer.appendChild(keyElement);
@@ -255,12 +285,12 @@ const setupKeyElement = (keyElement, keyObj) => {
         toggleElementLanguage(keyElement);
     })
     window.addEventListener('keydown', (e) => {
-        if (e.shiftKey) {
+        if (e.key.includes('Shift')) {
             toggleRegister(keyElement, true);
         }
     })
     window.addEventListener('keyup', (e) => {
-        if (e.key == "Shift") {
+        if (e.key.includes('Shift')) {
             toggleRegister(keyElement, false);
         }
     })
@@ -271,6 +301,10 @@ const toggleRegister = (keyElement, shiftKeyIsPressed) => {
     const letterForEng = shiftKeyIsPressed ? keyObject.engCapitalLetter : keyObject.engLetter;
     const letterForRus = shiftKeyIsPressed ? keyObject.rusCapitalLetter : keyObject.rusLetter;
     keyElement.innerText = (language == LANGUAGE_ENG ? letterForEng : letterForRus);
+}
+
+const toggleAllElementsRegister = (shiftKeyIsPressed) => {
+    LETTER_KEYS.forEach(keyElement => toggleRegister(keyElement, shiftKeyIsPressed));
 }
 
 const toggleElementLanguage = (keyElement) => {
@@ -311,7 +345,7 @@ const generateKeyboardArr = () => {
             new LetterKey(112, 1079, 'KeyP'),
             new CustomKey('[', 'х', '{', 'Х', 'BracketLeft'), 
             new CustomKey(']', 'ъ', '}', 'Ъ', 'BracketRight'), 
-            new NumberKey('\\', '/', 'Backslash'),
+            new NumberKey('\\', '/', null, 'Backslash'),
             new FunctionalKey('DEL', 'Delete')
         ],
         [
